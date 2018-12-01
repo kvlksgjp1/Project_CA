@@ -9,10 +9,10 @@
 
 #define MAP_SIZE_ROW 10
 #define MAP_SIZE_COL 10
-#define LEFT 75
-#define RIGHT 72
-#define UP 77
-#define DOWN 80
+#define UP 65
+#define DOWN 66
+#define RIGHT 67
+#define LEFT 68
 
 typedef struct player_position{
 	int row;
@@ -63,6 +63,12 @@ void on_input(int signum)
 {		
 	int 	c = getchar();		/* grab the char */
 
+    if(c==27)
+    {
+        c=getchar();
+        c=getchar();
+    }
+
 	if ( c == 'Q' || c == EOF )
 		done = 1;
 	else if ( c==' ' )
@@ -72,7 +78,7 @@ void on_input(int signum)
 			update(position.row,position.col,'M');
 
 	}
-	else if( c=='a' )//LEFT
+	else if( c==LEFT )//LEFT
 	{
 		if(map[position.row][position.col-1]!='2' && map[position.row][position.col-1]!='M'){
 			if(map[position.row][position.col]!='M'){
@@ -82,7 +88,7 @@ void on_input(int signum)
 			update(position.row,position.col,'C');
 		}
 	}
-	else if( c=='d' )//RIGHT
+	else if( c==RIGHT )//RIGHT
 	{
 		if(map[position.row][position.col+1]!='2' && map[position.row][position.col+1]!='M'){
 			if(map[position.row][position.col]!='M'){
@@ -92,7 +98,7 @@ void on_input(int signum)
 			update(position.row,position.col,'C');
 		}
 	}
-	else if( c=='w' )//UP
+	else if( c==UP )//UP
 	{
 		if(map[position.row-1][position.col]!='2' && map[position.row-1][position.col]!='M'){
 			if(map[position.row][position.col]!='M'){
@@ -102,7 +108,7 @@ void on_input(int signum)
 			update(position.row,position.col,'C');
 		}
 	}
-	else if( c=='s' )//DOWN
+	else if( c==DOWN )//DOWN
 	{
 		if(map[position.row+1][position.col]!='2' && map[position.row+1][position.col]!='M'){
 			if(map[position.row][position.col]!='M'){
@@ -150,6 +156,7 @@ void init()
 	signal(SIGALRM, on_alarm); 
 	position.row=1;
 	position.col=1;
+	start_color();
 }
 
 void play()
@@ -167,15 +174,53 @@ void play()
 void drawMap()
 {
 	int i,j;
+    char cBlock=(char)0x2588;
 
 	clear();
+	init_pair(1,COLOR_RED,COLOR_BLACK);
+	init_pair(2,COLOR_GREEN,COLOR_BLACK);
+	init_pair(3,COLOR_BLUE,COLOR_BLACK);
+
 	for(i=0;i<MAP_SIZE_ROW;i++)
 	for(j=0;j<MAP_SIZE_COL;j++)
 	{
-		move(i,j);		          /* get into position      */
-		addch(map[i][j]);	  	
+		move(i,j*2);		          /* get into position      */
+		if(map[i][j]==' ')
+		{
+			addch(' ');
+			move(i,j*2+1);
+			addch(' ');
+		}
+		else if(map[i][j]=='2')
+		{
+			attron(COLOR_PAIR(1));
+			addch(cBlock);
+			move(i,j*2+1);
+			addch(cBlock);
+			attroff(COLOR_PAIR(1));
+		}
+		else if(map[i][j]=='C')
+		{
+			attron(COLOR_PAIR(2));
+			addch(' '|A_REVERSE);
+			move(i,j*2+1);
+			addch(' '|A_REVERSE);
+			attron(COLOR_PAIR(2));
+		}
+		else if(map[i][j]=='M')
+		{
+			attron(COLOR_PAIR(3));
+			addch(' '|A_REVERSE);
+			move(i,j*2+1);
+			addch(' '|A_REVERSE);
+			attron(COLOR_PAIR(3));
+		}	
 
-	}	        
+	}
+    //addch(' '|A_REVERSE);
+    //addch(' '|A_REVERSE);
+    //printw("0x2588: "); addch(cBlock); printw("\n");
+	move(50,50);
 	refresh();
 }
 
