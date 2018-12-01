@@ -5,7 +5,9 @@
 #include 	<string.h>
 #include    <sys/time.h>
 #include	<unistd.h>
-#include	<termio.h> 
+#include	<termio.h>
+#include 	<pthread.h>
+#include	 <stdlib.h>
 
 #define MAP_SIZE_ROW 10
 #define MAP_SIZE_COL 10
@@ -21,6 +23,7 @@ typedef struct player_position{
 
 int	delay = 20;	/* how long to wait	*/
 int	done  = 0;
+int   power = 3;
 
 player_position position;
 
@@ -36,8 +39,8 @@ char	map[MAP_SIZE_ROW][MAP_SIZE_COL]=
 						 '2',' ',' ',' ',' ',' ',' ',' ',' ','2',
 						 '2','2','2','2','2','2','2','2','2','2',};
 
-
-
+void explosion(int,int);
+void *boom();
 void set_cr_noecho_mode(void); 
 int set_ticker(int); 		
 void enable_kbd_signals();
@@ -62,6 +65,10 @@ int main(void)
 void on_input(int signum)
 {		
 	int 	c = getchar();		/* grab the char */
+	pthread_t thr;
+   	int thr_id;
+   	int status;
+
 
     if(c==27)
     {
@@ -72,12 +79,17 @@ void on_input(int signum)
 	if ( c == 'Q' || c == EOF )
 		done = 1;
 	else if ( c==' ' )
-	{
-
-		if(map[position.row][position.col]!='M')
-			update(position.row,position.col,'M');
-
+ {
+      if(map[position.row][position.col]!='M'){
+         thr_id=pthread_create(&thr, NULL, boom, NULL);
+	   if (thr_id < 0)
+   	 {
+    	    perror("thread create error : ");
+    	    exit(0);
+    	}
+	//pthread_join(thr,(void **)&status);
 	}
+   }
 	else if( c==LEFT )//LEFT
 	{
 		if(map[position.row][position.col-1]!='2' && map[position.row][position.col-1]!='M'){
@@ -180,6 +192,7 @@ void drawMap()
 	init_pair(1,COLOR_RED,COLOR_BLACK);
 	init_pair(2,COLOR_GREEN,COLOR_BLACK);
 	init_pair(3,COLOR_BLUE,COLOR_BLACK);
+	init_pair(4,COLOR_CYAN,COLOR_BLACK);/* bomb pop color added */
 
 	for(i=0;i<MAP_SIZE_ROW;i++)
 	for(j=0;j<MAP_SIZE_COL;j++)
@@ -214,6 +227,14 @@ void drawMap()
 			move(i,j*2+1);
 			addch(' '|A_REVERSE);
 			attron(COLOR_PAIR(3));
+		}
+		else if(map[i][j]=='B')
+		{
+			attron(COLOR_PAIR(4));
+			addch(' '|A_REVERSE);
+			move(i,j*2+1);
+			addch(' '|A_REVERSE);
+			attron(COLOR_PAIR(4));
 		}	
 
 	}
@@ -234,6 +255,101 @@ void update(int row, int col, char value)
 	map[row][col]=value;
 }
 
+
+void *boom() /*2018.11.30 KJY add*/
+{
+	player_position bomb = position;
+	update(position.row,position.col,'M');
+
+	sleep(3);
+
+	if(map[bomb.row][bomb.col]=='M')/* if it doesn't explode with earlier other thread*/
+		explosion(bomb.row,bomb.col);/* bomb at thread's original position */
+}
+
+void explosion(int row,int col){
+	int i=0;
+
+	update(row,col,'B');
+	for(i=1;i<=power;i++){
+		if(map[row][col+i]!='2')
+		{
+			if(map[row][col+i]=='M')
+				{explosion(row,col+i);
+				break;}	
+			update(row,col+i,'B');}
+		else
+			break;
+		}
+
+	for(i=1;i<=power;i++){
+		if(map[row][col-i]!='2')
+		{
+			if(map[row][col-i]=='M')
+				{explosion(row,col-i);
+				break;}	
+			update(row,col-i,'B');}
+		else
+			break;
+		}
+
+	for(i=1;i<=power;i++){
+		if(map[row+i][col]!='2')
+		{
+			if(map[row+i][col]=='M')
+				{explosion(row+i,col);
+				break;}	
+			update(row+i,col,'B');}
+		else
+			break;
+		}
+
+	for(i=1;i<=power;i++){
+		if(map[row-i][col]!='2')
+		{
+			if(map[row-i][col]=='M')
+				{explosion(row-i,col);
+				break;}	
+			update(row-i,col,'B');}
+		else
+			break;
+		}
+
+	usleep(100000);
+
+	update(row,col,' ');	
+	for(i=1;i<=power;i++){
+		if(map[row][col+i]!='2')
+		{
+			update(row,col+i,' ');}
+		else
+			break;
+		}
+
+	for(i=1;i<=power;i++){
+		if(map[row][col-i]!='2')
+		{	
+			update(row,col-i,' ');}
+		else
+			break;
+		}
+
+	for(i=1;i<=power;i++){
+		if(map[row+i][col]!='2')
+		{
+			update(row+i,col,' ');}
+		else
+			break;
+		}
+
+	for(i=1;i<=power;i++){
+		if(map[row-i][col]!='2')
+		{
+			update(row-i,col,' ');}
+		else
+			break;
+		}
+}
 
 int set_ticker( int n_msecs )
 {
