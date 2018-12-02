@@ -8,6 +8,7 @@
 #include	<termio.h>
 #include 	<pthread.h>
 #include	 <stdlib.h>
+#include     	 <time.h>
 
 #define MAP_SIZE_ROW 10
 #define MAP_SIZE_COL 10
@@ -49,12 +50,12 @@ void play();
 void drawMap();
 void update(int,int,char);
 void end();
-
+void wall();
 int main(void)
 {	void	on_alarm(int);	/* handler for alarm	*/
 	void	on_input(int);	/* handler for keybd    */
 	
-
+	wall();
 	init();
 	play();
 	end();
@@ -92,7 +93,7 @@ void on_input(int signum)
    }
 	else if( c==LEFT )//LEFT
 	{
-		if(map[position.row][position.col-1]!='2' && map[position.row][position.col-1]!='M'){
+		if(map[position.row][position.col-1]!='2' && map[position.row][position.col-1]!='M' && map[position.row][position.col-1] !='1'){
 			if(map[position.row][position.col]!='M'){
 				update(position.row,position.col,' ');
 			}
@@ -102,7 +103,7 @@ void on_input(int signum)
 	}
 	else if( c==RIGHT )//RIGHT
 	{
-		if(map[position.row][position.col+1]!='2' && map[position.row][position.col+1]!='M'){
+		if(map[position.row][position.col+1]!='2' && map[position.row][position.col+1]!='M'&& map[position.row][position.col+1] !='1'){
 			if(map[position.row][position.col]!='M'){
 				update(position.row,position.col,' ');
 			}
@@ -112,7 +113,7 @@ void on_input(int signum)
 	}
 	else if( c==UP )//UP
 	{
-		if(map[position.row-1][position.col]!='2' && map[position.row-1][position.col]!='M'){
+		if(map[position.row-1][position.col]!='2' && map[position.row-1][position.col]!='M'&& map[position.row-1][position.col] !='1'){
 			if(map[position.row][position.col]!='M'){
 				update(position.row,position.col,' ');
 			}
@@ -122,7 +123,7 @@ void on_input(int signum)
 	}
 	else if( c==DOWN )//DOWN
 	{
-		if(map[position.row+1][position.col]!='2' && map[position.row+1][position.col]!='M'){
+		if(map[position.row+1][position.col]!='2' && map[position.row+1][position.col]!='M'&& map[position.row+1][position.col] !='1'){
 			if(map[position.row][position.col]!='M'){
 				update(position.row,position.col,' ');
 			}
@@ -187,8 +188,9 @@ void drawMap()
 {
 	int i,j;
     char cBlock=(char)0x2588;
-
+	char bBlock = (char)0x08; //일단 아무 숫자 넣음
 	clear();
+	init_pair(5,COLOR_YELLOW,COLOR_BLACK); //wall color
 	init_pair(1,COLOR_RED,COLOR_BLACK);
 	init_pair(2,COLOR_GREEN,COLOR_BLACK);
 	init_pair(3,COLOR_BLUE,COLOR_BLACK);
@@ -203,6 +205,15 @@ void drawMap()
 			addch(' ');
 			move(i,j*2+1);
 			addch(' ');
+		}
+		else if(map[i][j] == '1')
+		{
+			attron(COLOR_PAIR(5));
+			addch(' '|A_REVERSE);
+			move(i,j*2+1);
+			addch(' '|A_REVERSE);
+			attron(COLOR_PAIR(5));
+
 		}
 		else if(map[i][j]=='2')
 		{
@@ -236,7 +247,6 @@ void drawMap()
 			addch(' '|A_REVERSE);
 			attron(COLOR_PAIR(4));
 		}	
-
 	}
     //addch(' '|A_REVERSE);
     //addch(' '|A_REVERSE);
@@ -367,4 +377,17 @@ int set_ticker( int n_msecs )
 	return setitimer(ITIMER_REAL, &new_timeset, NULL);
 }
 
+void wall()
+{
+	srand(time(NULL));
+	int i,j;
+	int random_r, random_c;
+	for(i=0; i<10;i++){
+		random_r = rand() % MAP_SIZE_ROW;
+		random_c = rand() % MAP_SIZE_COL;
+		
+		if(map[random_r][random_c] != '2')
+			map[random_r][random_c] ='1';
+	}
 
+}
