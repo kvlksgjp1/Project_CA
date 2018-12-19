@@ -14,25 +14,43 @@
 #define MAP_SIZE_ROW 10
 #define MAP_SIZE_COL 10
 
+#define MAX_NAME_SIZE 100
+
 #define UP 65
 #define DOWN 66
 #define RIGHT 67
 #define LEFT 68
 
-typedef struct player_position{
+typedef struct player_information{
+	char *player_name;
+	int isAlive;
+	int power;
+	int bomb_num;
 	int row;
 	int col;
-}player_position;
+}player_information;
+
+typedef struct bomb_position{
+	int row;
+	int col;
+}bomb_position;
 
 int	delay = 20;	/* how long to wait	*/
-int	done  = 0;
+int	done = 0;
 int power = 3;
 
-player_position position;
+int isEnd = 0;
+int startPlay = 0;
+
+int Max_Player_Number=0;
+int current_player_number=0;
+
+player_information Player_List[4];
+bomb_position bomb_pos;
 
 char	map[MAP_SIZE_ROW][MAP_SIZE_COL]=
 						{'2','2','2','2','2','2','2','2','2','2',
-						 '2','C',' ',' ',' ',' ',' ',' ',' ','2',
+						 '2',' ',' ',' ',' ',' ',' ',' ',' ','2',
 						 '2',' ',' ',' ',' ','1',' ',' ',' ','2',
 						 '2',' ',' ',' ',' ','1',' ',' ',' ','2',
 						 '2',' ',' ',' ',' ','1',' ',' ',' ','2',
@@ -51,8 +69,8 @@ void drawMap();
 pthread_t thread;
 pthread_mutex_t mutex;
 
-#define MAX_CLIENT	10
-#define CHATDATA	1024
+#define MAX_CLIENT 10
+#define CHATDATA 1024
 #define HOSTLEN 256
 #define INVALID_SOCK -1 // 클라이언트 소켓 배열의 초기 값.
 
@@ -70,16 +88,78 @@ int openServer(int argc, char *argv[]);
 
 int main(int argc, char *argv[]) {
 	
-	init();
+	printf("플레이어 수 입력 : ");
+	scanf("%d",&Max_Player_Number);
 	openServer(argc, argv);
+	initPlayer();
+	run();
 
 	return 0;
 }
 
-void init()
+
+void run()
 {
-	position.row=1;
-	position.col=1;
+	while(!isEnd)
+	{
+		//
+
+	}
+}
+
+void initPlayer()
+{
+	int i;
+
+
+	for(i=0;i<4;i++){
+
+		Player_List[i].player_name = (char *)malloc(sizeof(char)*MAX_NAME_SIZE);
+		Player_List[i].power=0;
+		Player_List[i].bomb_num=0;
+		Player_List[i].isAlive=0;
+		Player_List[i].row=0;
+		Player_List[i].col=0;
+
+	}
+
+	for(i=0;i<Max_Player_Number;i++){
+
+		//player_list[i].player_name = (char *)malloc(sizeof(char)*MAX_NAME_SIZE);
+		Player_List[i].power=1;
+		Player_List[i].bomb_num=1;
+		Player_List[i].isAlive=1;
+
+		switch(i){
+		case 0:
+		strcpy(Player_List[i].player_name,"aaa");
+		Player_List[i].row=1;
+		Player_List[i].col=1;
+		map[1][1]='a';
+		break;
+		case 1:
+		strcpy(Player_List[i].player_name,"bbb");
+		Player_List[i].row=8;
+		Player_List[i].col=8; 
+		map[8][8]='b';
+		break;
+		case 2:
+		strcpy(Player_List[i].player_name,"ccc");
+		Player_List[i].row=8;
+		Player_List[i].col=1;
+		map[8][1]='c';
+		break;
+		case 3:
+		strcpy(Player_List[i].player_name,"ddd");
+		Player_List[i].row=1;
+		Player_List[i].col=8;
+		map[1][8]='d';
+		break;
+		}
+
+	}
+
+
 }
 
 int openServer(int argc, char *argv[])
@@ -156,19 +236,31 @@ int openServer(int argc, char *argv[])
 			write(c_socket, greeting, strlen(greeting));
 			pthread_create(&thread, NULL, do_chat, (void *) c_socket);
 		}
+
+		current_player_number++;
+		if(current_player_number==Max_Player_Number)
+		{
+			break;
+		}
 	}
+	
+	startPlay=1;
 }
 
 void *do_chat(void *arg) {
 
 	int c_socket = (int) arg;
 	char chatData[CHATDATA];
+	char character;
 	int i, n;
+	int who;
 	char *ptr;
 	pthread_t thr;
 	int thr_id;
 
 	while(1) {
+		if(startPlay)
+		{
 		memset(chatData, 0, sizeof(chatData));
 		
 		// 소켓으로부터 읽어온 데이터가 있으면 전체 클라이언트에 메시지를 보낸다.
@@ -180,49 +272,72 @@ void *do_chat(void *arg) {
 				}
 			}*/
 
+		if(contain(chatData,"aaa"))
+		{
+			who=0;
+			character='a';
+		}
+		else if(contain(chatData,"bbb"))
+		{
+			who=1;
+			character='b';
+		}
+		else if(contain(chatData,"ccc"))
+		{
+			who=2;
+			character='c';
+		}
+		else if(contain(chatData,"ddd"))
+		{
+			who=3;
+			character='d';
+		}
+
 			if(contain(chatData,"LEFT"))
 			{
-				if(map[position.row][position.col-1]!='2' && map[position.row][position.col-1]!='M' && map[position.row][position.col-1]!='1'){
-					if(map[position.row][position.col]!='M' && map[position.row][position.col]!='1'){
-						update(position.row,position.col,' ');
+				if(map[Player_List[who].row][Player_List[who].col-1]!='2' && map[Player_List[who].row][Player_List[who].col-1]!='M' && map[Player_List[who].row][Player_List[who].col-1]!='1'){
+					if(map[Player_List[who].row][Player_List[who].col]!='M' && map[Player_List[who].row][Player_List[who].col]!='1'){
+						update(Player_List[who].row,Player_List[who].col,' ');
 					}
-					position.col-=1;
-					update(position.row,position.col,'C');
+					Player_List[who].col-=1;
+					update(Player_List[who].row,Player_List[who].col,character);
 				}
 			}
 			else if(contain(chatData,"RIGHT"))
 			{
-				if(map[position.row][position.col+1]!='2' && map[position.row][position.col+1]!='M' && map[position.row][position.col+1]!='1'){
-					if(map[position.row][position.col]!='M' && map[position.row][position.col]!='1'){
-						update(position.row,position.col,' ');
+				if(map[Player_List[who].row][Player_List[who].col+1]!='2' && map[Player_List[who].row][Player_List[who].col+1]!='M' && map[Player_List[who].row][Player_List[who].col+1]!='1'){
+					if(map[Player_List[who].row][Player_List[who].col]!='M' && map[Player_List[who].row][Player_List[who].col]!='1'){
+						update(Player_List[who].row,Player_List[who].col,' ');
 					}
-					position.col+=1;
-					update(position.row,position.col,'C');
+					Player_List[who].col+=1;
+					update(Player_List[who].row,Player_List[who].col,character);
 				}
 			}
 			else if(contain(chatData,"UP"))
 			{
-				if(map[position.row-1][position.col]!='2' && map[position.row-1][position.col]!='M' && map[position.row-1][position.col]!='1'){
-					if(map[position.row][position.col]!='M' && map[position.row][position.col]!='1'){
-						update(position.row,position.col,' ');
+				if(map[Player_List[who].row-1][Player_List[who].col]!='2' && map[Player_List[who].row-1][Player_List[who].col]!='M' && map[Player_List[who].row-1][Player_List[who].col]!='1'){
+					if(map[Player_List[who].row][Player_List[who].col]!='M' && map[Player_List[who].row][Player_List[who].col]!='1'){
+						update(Player_List[who].row,Player_List[who].col,' ');
 					}
-					position.row-=1;
-					update(position.row,position.col,'C');
+					Player_List[who].row-=1;
+					update(Player_List[who].row,Player_List[who].col,character);
 				}
 			}
 			else if(contain(chatData,"DOWN"))
 			{
-				if(map[position.row+1][position.col]!='2' && map[position.row+1][position.col]!='M' && map[position.row+1][position.col]!='1'){
-					if(map[position.row][position.col]!='M' && map[position.row][position.col]!='1'){
-						update(position.row,position.col,' ');
+				if(map[Player_List[who].row+1][Player_List[who].col]!='2' && map[Player_List[who].row+1][Player_List[who].col]!='M' && map[Player_List[who].row+1][Player_List[who].col]!='1'){
+					if(map[Player_List[who].row][Player_List[who].col]!='M' && map[Player_List[who].row][Player_List[who].col]!='1'){
+						update(Player_List[who].row,Player_List[who].col,' ');
 					}
-					position.row+=1;
-					update(position.row,position.col,'C');
+					Player_List[who].row+=1;
+					update(Player_List[who].row,Player_List[who].col,character);
 				}
 			}
 			else if(contain(chatData,"BOMB"))
 			{
-				 if(map[position.row][position.col]!='M'){
+				 if(map[Player_List[who].row][Player_List[who].col]!='M'){
+					 bomb_pos.row=Player_List[who].row;
+					 bomb_pos.col=Player_List[who].col;
 					 thr_id=pthread_create(&thr, NULL, boom, NULL);
 				   if (thr_id < 0)
 			   	 {
@@ -234,7 +349,7 @@ void *do_chat(void *arg) {
 			}
 			else if(contain(chatData,"WALL"))
 			{
-				 update(position.row,position.col,'1');
+				 update(Player_List[who].row,Player_List[who].col,'1');
 			}
 
             sendMap();
@@ -244,7 +359,8 @@ void *do_chat(void *arg) {
 				break;
 			}
 		}
-	}
+		}//end if
+	}//end while
 }
 
 void update(int row, int col, char value)
@@ -334,8 +450,8 @@ int popClient(int s) {
 
 void *boom() /*2018.11.30 KJY add*/
 {
-	player_position bomb = position;
-	update(position.row,position.col,'M');
+	bomb_position bomb = bomb_pos;
+	update(bomb.row,bomb.col,'M');
 
 	sleep(3);
 

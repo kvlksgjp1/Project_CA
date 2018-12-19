@@ -284,12 +284,36 @@ void drawMap()
 			addch(cBlock);
 			attroff(COLOR_PAIR(1));
 		}
-		else if(map[i][j]=='C')
+		else if(map[i][j]=='a')
 		{
 			attron(COLOR_PAIR(2));
-			addch(' '|A_REVERSE);
+			addch('P'|A_REVERSE);
 			move(i,j*2+1);
-			addch(' '|A_REVERSE);
+			addch('1'|A_REVERSE);
+			attron(COLOR_PAIR(2));
+		}
+		else if(map[i][j]=='b')
+		{
+			attron(COLOR_PAIR(2));
+			addch('P'|A_REVERSE);
+			move(i,j*2+1);
+			addch('2'|A_REVERSE);
+			attron(COLOR_PAIR(2));
+		}
+		else if(map[i][j]=='c')
+		{
+			attron(COLOR_PAIR(2));
+			addch('P'|A_REVERSE);
+			move(i,j*2+1);
+			addch('3'|A_REVERSE);
+			attron(COLOR_PAIR(2));
+		}
+		else if(map[i][j]=='d')
+		{
+			attron(COLOR_PAIR(2));
+			addch('P'|A_REVERSE);
+			move(i,j*2+1);
+			addch('4'|A_REVERSE);
 			attron(COLOR_PAIR(2));
 		}
 		else if(map[i][j]=='M')
