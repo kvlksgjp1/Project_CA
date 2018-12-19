@@ -15,6 +15,7 @@
 #define MAP_SIZE_COL 10
 
 #define MAX_NAME_SIZE 100
+#define MAX_USER_SIZE 4
 
 #define UP 65
 #define DOWN 66
@@ -25,7 +26,8 @@ typedef struct player_information{
 	char *player_name;
 	int isAlive;
 	int power;
-	int bomb_num;
+	int bomb_num_max;
+	int bomb_available;
 	int row;
 	int col;
 }player_information;
@@ -45,7 +47,7 @@ int startPlay = 0;
 int Max_Player_Number=0;
 int current_player_number=0;
 
-player_information Player_List[4];
+player_information Player_List[MAX_USER_SIZE];
 bomb_position bomb_pos;
 
 char	map[MAP_SIZE_ROW][MAP_SIZE_COL]=
@@ -112,11 +114,13 @@ void initPlayer()
 	int i;
 
 
-	for(i=0;i<4;i++){
+	for(i=0;i<MAX_USER_SIZE;i++){
 
-		Player_List[i].player_name = (char *)malloc(sizeof(char)*MAX_NAME_SIZE);
+		Player_List[i].player_name=NULL;
+		//Player_List[i].player_name=NULL;
 		Player_List[i].power=0;
-		Player_List[i].bomb_num=0;
+		Player_List[i].bomb_num_max=0;
+		Player_List[i].bomb_available=0;
 		Player_List[i].isAlive=0;
 		Player_List[i].row=0;
 		Player_List[i].col=0;
@@ -125,41 +129,42 @@ void initPlayer()
 
 	for(i=0;i<Max_Player_Number;i++){
 
-		//player_list[i].player_name = (char *)malloc(sizeof(char)*MAX_NAME_SIZE);
+		Player_List[i].player_name=(char *)malloc(sizeof(char)*MAX_NAME_SIZE);
 		Player_List[i].power=1;
-		Player_List[i].bomb_num=1;
+		Player_List[i].bomb_num_max=1;
+		Player_List[i].bomb_available=1;
 		Player_List[i].isAlive=1;
 
 		switch(i){
-		case 0:
-		strcpy(Player_List[i].player_name,"aaa");
-		Player_List[i].row=1;
-		Player_List[i].col=1;
-		map[1][1]='a';
-		break;
-		case 1:
-		strcpy(Player_List[i].player_name,"bbb");
-		Player_List[i].row=8;
-		Player_List[i].col=8; 
-		map[8][8]='b';
-		break;
-		case 2:
-		strcpy(Player_List[i].player_name,"ccc");
-		Player_List[i].row=8;
-		Player_List[i].col=1;
-		map[8][1]='c';
-		break;
-		case 3:
-		strcpy(Player_List[i].player_name,"ddd");
-		Player_List[i].row=1;
-		Player_List[i].col=8;
-		map[1][8]='d';
-		break;
+			case 0:
+			strcpy(Player_List[i].player_name,"aaa");
+			Player_List[i].row=1;
+			Player_List[i].col=1;
+			map[1][1]='a';
+			break;
+			case 1:
+			strcpy(Player_List[i].player_name,"bbb");
+			Player_List[i].row=8;
+			Player_List[i].col=8; 
+			map[8][8]='b';
+			break;
+			case 2:
+			strcpy(Player_List[i].player_name,"ccc");
+			Player_List[i].row=8;
+			Player_List[i].col=1;
+			map[8][1]='c';
+			break;
+			case 3:
+			strcpy(Player_List[i].player_name,"ddd");
+			Player_List[i].row=1;
+			Player_List[i].col=8;
+			map[1][8]='d';
+			break;
 		}
 
 	}
 
-
+	printf("Player Init 완료\n");
 }
 
 int openServer(int argc, char *argv[])
@@ -224,7 +229,7 @@ int openServer(int argc, char *argv[])
 
         printf("새로운 accept 시도중...\n");
 		c_socket = accept(s_socket, (struct sockaddr *)&c_addr, &len);
-        printf("%d번째 클라이언트와 연결\n",client_count++);
+        printf("%d번째 클라이언트와 연결 성공\n",client_count++);
 
 		// 연결 소켓의 번호를 클라이언트 배열에 추가.
 		res = pushClient(c_socket);
@@ -245,6 +250,7 @@ int openServer(int argc, char *argv[])
 	}
 	
 	startPlay=1;
+	printf("모든 클라이언트 접속 완료\n");
 }
 
 void *do_chat(void *arg) {
@@ -379,24 +385,28 @@ int contain(char *s1, char *find)
 	return 0;
 }
 
-void startSend()
-{
-
-
-}
-
 void sendMap()
 {
 	int i,j;
-	char *mapdata= "server:mapdata:" ;
+	char str[100];
+	char fullStr[500]="";
 	int count=0;
+
+
 	for (i = 0; i < MAX_CLIENT; i++){
 				if (list_c[i] != INVALID_SOCK) {
 					//write(list_c[i], mapdata, sizeof(100));
+					//strcat(fullStr,map);
 					write(list_c[i], map, 100);
+						//sprintf(str,"[%d]player_name:%s isAlive:%d power:%d bomb_num_max:%d bomb_available:%d row:%d col:%d",j,Player_List[j].player_name,Player_List[j].isAlive,Player_List[j].power,Player_List[j].bomb_num_max,Player_List[j].bomb_available,Player_List[j].row,Player_List[j].col);
+
+					sendData(list_c[i]);
+						//printf("보낸 데이터\n");
+						//printf("%s\n",str);
+						//write(list_c[i], str, sizeof(str)*4);
 				}
 			}
-	
+
 
 	for(i=0;i<MAP_SIZE_ROW;i++)
 		{for(j=0;j<MAP_SIZE_COL;j++)
@@ -404,6 +414,32 @@ void sendMap()
 		printf("\n");}
 
 	printf("맵 전송 완료\n");
+}
+
+void sendData(int client){
+
+	int i,j;
+	char str[100];
+	char fullStr[500]="";
+	int count=0;
+
+					for(j=0;j<4;j++){
+	usleep(20000);
+sprintf(str,"[%d]%s %d %d %d %d %d %d",j,Player_List[j].player_name,Player_List[j].isAlive,Player_List[j].power,Player_List[j].bomb_num_max,Player_List[j].bomb_available,Player_List[j].row,Player_List[j].col);
+
+						//sprintf(str,"[%d]player_name:%s isAlive:%d power:%d bomb_num_max:%d bomb_available:%d row:%d col:%d",j,Player_List[j].player_name,Player_List[j].isAlive,Player_List[j].power,Player_List[j].bomb_num_max,Player_List[j].bomb_available,Player_List[j].row,Player_List[j].col);
+
+						//printf("\n%s\n",str);
+						//strcat(fullStr,str);
+
+						printf("보낸 데이터\n");
+						printf("%s\n",str);
+						write(client, str, sizeof(str));
+
+			}
+
+
+	printf("데이터 전송 완료\n");
 }
 
 void on_alarm(int signum)
